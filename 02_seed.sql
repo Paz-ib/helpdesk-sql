@@ -1,9 +1,8 @@
 -- =============================================================
 -- Helpdesk Ticket System - Seed Data
--- (con tablas maestras)
 -- =============================================================
 
--- Primero: poblar las tablas maestras
+-- Insert de datos
 INSERT INTO ticket_statuses (id) VALUES
     ('open'), ('in_progress'), ('pending'), ('resolved'), ('closed');
 
@@ -13,7 +12,7 @@ INSERT INTO ticket_priorities (id) VALUES
 INSERT INTO user_roles (id) VALUES
     ('end_user'), ('technician'), ('admin');
 
--- Categories
+
 INSERT INTO categories (name, description, sla_hours) VALUES
     ('Hardware',         'PC, monitors, peripherals, printers',        8),
     ('Software',         'OS issues, app installs, crashes',           12),
@@ -22,7 +21,7 @@ INSERT INTO categories (name, description, sla_hours) VALUES
     ('Email',            'Outlook, distribution lists, spam',          8),
     ('Other',            'Anything not covered above',                 24);
 
--- Users
+
 INSERT INTO users (full_name, email, role, department) VALUES
     ('Laura Gómez',     'lgomez@company.com',    'admin',       'IT'),
     ('Marcos Díaz',     'mdiaz@company.com',     'admin',       'IT'),
@@ -45,7 +44,7 @@ INSERT INTO users (full_name, email, role, department) VALUES
     ('Natalia Ríos',    'nrios@company.com',     'end_user',    'Operations'),
     ('Hernán Giménez',  'hgimenez@company.com',  'end_user',    'Finance');
 
--- Tickets
+
 INSERT INTO tickets (title, description, status, priority, category_id, created_by, assigned_to, created_at, updated_at, resolved_at, due_at) VALUES
     ('PC no enciende', 'La PC del escritorio no da señal al arrancar.', 'open', 'high', 1, 8, 3, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours', NULL, NOW() + INTERVAL '6 hours'),
     ('Sin acceso a VPN', 'Desde ayer no puedo conectarme a la VPN corporativa.', 'open', 'critical', 3, 11, NULL, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes', NULL, NOW() + INTERVAL '3.5 hours'),
@@ -68,7 +67,7 @@ INSERT INTO tickets (title, description, status, priority, category_id, created_
     ('Solicitud de segundo monitor', 'Monitor instalado y configurado.', 'closed', 'low', 1, 11, 7, NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days', NOW() - INTERVAL '14 days', NOW() - INTERVAL '14.6 days'),
     ('Error de DNS en sucursal', 'Se corrigió la configuración del servidor DNS secundario.', 'closed', 'critical', 3, 2, 3, NOW() - INTERVAL '20 days', NOW() - INTERVAL '19 days', NOW() - INTERVAL '19 days', NOW() - INTERVAL '19.8 days');
 
--- Ticket updates
+
 INSERT INTO ticket_updates (ticket_id, author_id, note, old_status, new_status) VALUES
     (6,  3, 'Revisé configuración de Exchange. Veo que el perfil de Outlook está corrupto. Voy a recrearlo.', 'open', 'in_progress'),
     (7,  6, 'La impresora tiene la IP mal asignada. Actualizando en el servidor de impresión.', 'open', 'in_progress'),

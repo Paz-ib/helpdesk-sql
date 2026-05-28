@@ -1,6 +1,6 @@
 -- =============================================================
--- Helpdesk Ticket System - Schema con tablas maestras
--- PostgreSQL 14+ (funciona en cualquier BD)
+-- Helpdesk Ticket System - 
+-- PostgreSQL 14+ 
 -- =============================================================
 
 -- Tablas
@@ -68,12 +68,3 @@ CREATE TABLE ticket_updates (
     CONSTRAINT fk_update_new_status FOREIGN KEY (new_status) REFERENCES ticket_statuses(id)
 );
 
--- Indexes
-CREATE INDEX idx_tickets_status        ON tickets(status);
-CREATE INDEX idx_tickets_assigned_to   ON tickets(assigned_to);
-CREATE INDEX idx_tickets_created_at    ON tickets(created_at DESC);
-CREATE INDEX idx_tickets_category      ON tickets(category_id);
-CREATE INDEX idx_ticket_updates_ticket ON ticket_updates(ticket_id);
-
-CREATE INDEX idx_tickets_open ON tickets(assigned_to, priority)
-    WHERE status IN ('open', 'in_progress');
