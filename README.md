@@ -1,130 +1,94 @@
-# Helpdesk Ticket System — SQL Portfolio Project
+# Helpdesk Ticket System — Proyecto SQL
 
-A realistic helpdesk/ticketing database built with **PostgreSQL**, designed to demonstrate
-SQL skills relevant to IT Support roles: schema design, stored procedures, triggers, views,
-indexes, and analytical reporting queries.
+Base de datos de tickets de soporte IT diseñada con **PostgreSQL** para demostrar habilidades SQL: diseño de esquema, relaciones, claves foráneas, índices y consultas analíticas.
 
 ---
 
-## Database Schema
+## Esquema de la base de datos
 
 ```
-users ──────────────────────────────────────────────────────────┐
-  id, full_name, email, role (end_user/technician/admin),       │
-  department, is_active, created_at                             │
-                                                                │
-categories                                                      │
-  id, name, description, sla_hours                              │
-         │                                                      │
-         ▼                                                      │
-tickets ◄───────────────────────────────────────────────────────┘
-  id, title, description, status, priority,                     │
-  category_id (FK), created_by (FK), assigned_to (FK),          │
-  created_at, updated_at, resolved_at, due_at                   │
-         │                                                      │
-         ▼                                                      │
-ticket_updates                                                  │
-  id, ticket_id (FK), author_id (FK),                           │
-  note, old_status, new_status, created_at                      │
+users ──────────────────────────────────────────┐
+  id, full_name, email, role, department,        │
+  is_active, created_at                          │
+                                                 │
+categories                                       │
+  id, name, description, sla_hours               │
+         │                                       │
+         ▼                                       │
+tickets ◄────────────────────────────────────────┘
+  id, title, description, status, priority,
+  category_id (FK), created_by (FK),
+  assigned_to (FK), created_at, updated_at,
+  resolved_at, due_at
+         │
+         ▼
+ticket_updates
+  id, ticket_id (FK), author_id (FK),
+  note, old_status, new_status, created_at
 ```
 
-**Enums:** `ticket_status` (open → in_progress → pending → resolved → closed),
-`ticket_priority` (low / medium / high / critical), `user_role`.
+**Tablas maestras** (reemplazan ENUMs): `ticket_statuses`, `ticket_priorities`, `user_roles` — contienen los valores permitidos como datos reales, visibles con `SELECT`.
 
 ---
 
-## Files
+## Archivos
 
-| File | Contents |
-|------|----------|
-| `01_schema.sql` | Table definitions, enums, indexes (including a partial index) |
-| `02_seed.sql` | Realistic sample data: 20 users, 5 technicians, 20 tickets |
-| `03_logic.sql` | Views, stored procedures, triggers |
-| `04_queries.sql` | Analytical queries: SLA compliance, technician performance, escalation detection |
-
----
-
-## Highlights
-
-### Stored Procedures
-- `sp_create_ticket` — creates a ticket and auto-calculates `due_at` from the category SLA
-- `sp_assign_ticket` — assigns a technician, transitions status to `in_progress`, logs the event
-- `sp_resolve_ticket` — closes a ticket with validation and audit log entry
-
-### Triggers
-- `trg_tickets_updated_at` — auto-updates `updated_at` on every row change
-- `trg_tickets_log_status_change` — auto-inserts into `ticket_updates` on status transitions
-
-### Views
-- `v_tickets_full` — complete ticket details including SLA breach flag and resolution time
-- `v_technician_workload` — per-technician counts by status and average resolution time
-
-### Analytical Queries
-- SLA compliance rate per category
-- Technician performance (avg/min/max resolution hours)
-- Overdue tickets with hours elapsed past SLA
-- Weekly ticket volume trend (last 8 weeks)
-- Escalation candidates: unassigned tickets open for more than 2 hours
+| Archivo | Contenido |
+|---------|-----------|
+| `01_schema.sql` | Definición de tablas, claves foráneas, índices (incluye índice parcial) |
+| `02_seed.sql` | Datos de prueba: 20 usuarios, 6 categorías, 20 tickets, 11 actualizaciones |
+| `04_queries.sql` | Consultas SQL: filtros por estado/prioridad, búsquedas por usuario/departamento |
 
 ---
 
-## How to Run
+## Consultas destacadas
 
-### Prerequisites
-- PostgreSQL 14 or later
-- `psql` CLI (installed with PostgreSQL)
+- Tickets abiertos sin técnico asignado
+- Tickets vencidos (SLA breached)
+- Tickets por estado con porcentaje
+- Usuarios por departamento
+- Historial de cambios de un ticket
+- Filtros combinados (prioridad + estado)
 
-### macOS — Quick Setup
+---
+
+## Cómo ejecutar
+
+### Requisitos
+- PostgreSQL 14 o superior
+- `psql` CLI
+
+### En macOS
 
 ```bash
-# Install PostgreSQL via Homebrew
-brew install postgresql@16
-brew services start postgresql@16
-
-# Create the database
+# Crear la base de datos
 createdb helpdesk
 
-# Run scripts in order
+# Cargar schema y datos
 psql -d helpdesk -f 01_schema.sql
 psql -d helpdesk -f 02_seed.sql
-psql -d helpdesk -f 03_logic.sql
 
-# Try a query
+# Probar consultas
 psql -d helpdesk -f 04_queries.sql
+
+# O entrar al modo interactivo
+psql helpdesk
 ```
 
-### Try the stored procedures
-
+Dentro de `psql`:
 ```sql
--- Create a new ticket
-CALL sp_create_ticket(
-    'Laptop won''t connect to docking station',
-    'USB-C dock not detected after Windows update.',
-    'high',
-    1,   -- category: Hardware
-    8,   -- created_by: user ID 8
-    NULL -- OUT param
-);
-
--- Assign it (use the ID returned above)
-CALL sp_assign_ticket(21, 3, 1);  -- ticket, technician, assigned_by
-
--- Resolve it
-CALL sp_resolve_ticket(21, 3, 'Driver rolled back. Dock now detected correctly.');
+\pset pager off   -- evita paginación
+SELECT * FROM users;
 ```
 
 ---
 
-## Design Decisions
+## Decisiones de diseño
 
-**Partial index on open tickets** — `idx_tickets_open` covers only `status IN ('open', 'in_progress')`,
-the most frequently queried subset. Reduces index size and speeds up technician dashboards.
+**Tablas maestras en vez de ENUMs** — los valores permitidos (estados, prioridades, roles) viven en tablas físicas. Esto hace el esquema más portable entre bases de datos y más didáctico: podés consultar los valores con `SELECT * FROM ticket_statuses`.
 
-**Single `users` table for all roles** — simplifies joins and avoids duplication.
-Role-based access control would be enforced at the application layer.
+**Una sola tabla `users`** — tanto usuarios finales como técnicos comparten la misma tabla, diferenciados por el campo `role`. Simplifica joins y evita duplicación.
 
-**`due_at` computed at insert time** — SLA deadline is stored rather than calculated at query time,
-making overdue detection a simple `WHERE due_at < NOW()` with index support.
+**Índice parcial en tickets activos** — `idx_tickets_open` solo indexa tickets con estado `open` o `in_progress`, que son el subconjunto más consultado. Ahorra espacio y acelera búsquedas.
 
-**Audit log via trigger + procedure** — status changes are recorded both when using stored
-procedures (explicit insert) and direct UPDATEs (via trigger), ensuring no transition is missed.
+**`due_at` calculado al insertar** — la fecha límite SLA se guarda como columna, permitiendo detectar vencimientos con un simple `WHERE due_at < NOW()`.
